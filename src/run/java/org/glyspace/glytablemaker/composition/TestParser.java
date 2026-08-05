@@ -5,6 +5,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.glycoinfo.GlycanCompositionConverter.conversion.CompositionConverter;
+import org.glycoinfo.GlycanCompositionConverter.conversion.ConversionException;
+import org.glycoinfo.GlycanCompositionConverter.structure.Composition;
+import org.glycoinfo.GlycanCompositionConverter.utils.CompositionParseException;
+import org.glycoinfo.GlycanCompositionConverter.utils.CompositionUtils;
+import org.glycoinfo.GlycanCompositionConverter.utils.DictionaryException;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -62,5 +69,23 @@ public class TestParser
             System.out.println(
                     "Unable to parse " + t_sequence + " with the specified format instructions.");
         }
+        
+        String wurcsComposition = "";
+        for (ResidueType residue: t_result.keySet()) {
+        	if (!wurcsComposition.isEmpty()) wurcsComposition += "|";
+        	wurcsComposition += residue.getWurcsName() + ":" + t_result.get(residue);
+        }
+        System.out.println ("WURCS encoding : " + wurcsComposition);
+        try {
+			Composition compo = CompositionUtils.parse(wurcsComposition);
+			String strWURCS = CompositionConverter.toWURCS(compo);
+			System.out.println ("WURCS Sequence: " + strWURCS);
+			
+		} catch (Exception e) {
+			System.out.println(
+                    "Unable to parse " + wurcsComposition + "Reason:" + e.getMessage());
+		}
+        
+        
     }
 }

@@ -3,7 +3,7 @@ package org.glyspace.glytablemaker.composition;
 public enum ResidueType
 {
 
-    HEX("Hexose"), HEXNAC("HexNAc"), NEUAC("Neu5Ac"), SULFATE("Sulfate");
+    HEX("Hex"), HEXNAC("HexNAc"), NEUAC("Neu5Ac"), SULFATE("S");
 
     private final String m_wurcsName;
 
