@@ -11,9 +11,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.eurocarbdb.MolecularFramework.sugar.Anomer;
+import org.eurocarbdb.MolecularFramework.sugar.GlycoNode;
+import org.eurocarbdb.MolecularFramework.sugar.GlycoconjugateException;
+import org.eurocarbdb.MolecularFramework.sugar.Monosaccharide;
+import org.eurocarbdb.MolecularFramework.sugar.Sugar;
 import org.glycoinfo.GlycanCompositionConverter.conversion.CompositionConverter;
+import org.glycoinfo.GlycanCompositionConverter.conversion.ConversionException;
 import org.glycoinfo.GlycanCompositionConverter.structure.Composition;
 import org.glycoinfo.GlycanCompositionConverter.utils.CompositionUtils;
+import org.glycoinfo.GlycanFormatconverter.util.exchange.SugarToWURCSGraph.SugarToWURCSGraph;
+import org.glycoinfo.WURCSFramework.util.WURCSException;
+import org.glycoinfo.WURCSFramework.util.WURCSFactory;
+import org.glycoinfo.WURCSFramework.util.exchange.WURCSExchangeException;
+import org.glycoinfo.WURCSFramework.util.subsumption.WURCSSubsumptionConverter;
+import org.glycoinfo.WURCSFramework.wurcs.array.LIN;
+import org.glycoinfo.WURCSFramework.wurcs.array.MS;
+import org.glycoinfo.WURCSFramework.wurcs.array.RES;
+import org.glycoinfo.WURCSFramework.wurcs.array.UniqueRES;
+import org.glycoinfo.WURCSFramework.wurcs.array.WURCSArray;
 
 public class Composition2WURCS
 {
@@ -58,6 +74,76 @@ public class Composition2WURCS
 
     }
 
+    /*
+    public static void changeCompositionType () {
+    	switch (compositionType) {
+        case BASE:
+        	Composition compo = CompositionUtils.parse(g.getComposition().trim());
+        	strWURCS = CompositionConverter.toWURCS(compo);
+        	strWURCS = toUnknownForm(strWURCS);
+        	break;
+        case GLYGEN:
+        	compo = CompositionUtils.parse(g.getComposition().trim());
+        	SugarToWURCSGraph t_s2w = new SugarToWURCSGraph();
+			try {
+				Sugar sugar = CompositionConverter.toSugar(compo);
+				for (GlycoNode node: sugar.getNodes()) {
+					if (node instanceof Monosaccharide) {
+						Monosaccharide m = ((Monosaccharide)node);
+						m.setRing(-1, -1);
+						m.setAnomer(Anomer.Unknown);
+					}
+				}
+				t_s2w.start(sugar);
+			} catch (WURCSExchangeException | GlycoconjugateException e) {
+				throw new ConversionException("Error in converting composition to Sugar object.", e);
+			}
+			try {
+				WURCSFactory factory = new WURCSFactory(t_s2w.getGraph());
+				strWURCS = factory.getWURCS();
+			} catch (WURCSException e) {
+				throw new ConversionException("Error in encoding the composition in WURCS.", e);
+			}
+        	break;
+        case DEFINED:
+        	compo = CompositionUtils.parse(g.getComposition().trim());
+        	strWURCS = CompositionConverter.toWURCS(compo);
+        	break;
+    }*/
+    	
+	public static String toUnknownForm(String strWURCS) throws WURCSException {
+
+        WURCSFactory factory = new WURCSFactory(strWURCS);
+        WURCSArray array = factory.getArray();
+
+        // copy array without UniqueRES
+        WURCSArray arrayNew = new WURCSArray(
+            array.getVersion(),
+            array.getUniqueRESCount(),
+            array.getRESCount(),
+            array.getLINCount(),
+            array.isComposition()
+        );
+
+        for (RES res : array.getRESs())
+          arrayNew.addRES(res);
+
+        for ( LIN lin : array.getLINs() )
+          arrayNew.addLIN(lin);
+
+        // add UniqueRES converted to unknown form
+        WURCSSubsumptionConverter converter = new WURCSSubsumptionConverter();
+        for (UniqueRES ures : array.getUniqueRESs()) {
+          MS ms = converter.convertAnomericCarbonToUncertain(ures);
+          UniqueRES uresNew = new UniqueRES(ures.getUniqueRESID(), ms);
+          arrayNew.addUniqueRES(uresNew);
+        }
+
+        // back to WURCS
+        WURCSFactory factoryNew = new WURCSFactory(arrayNew);
+        return factoryNew.getWURCS();
+    }
+    	
     public static String exportWURCS(Map<ResidueType, Integer> a_composition, Integer a_lineNumber,
             String a_oringalString)
     {
